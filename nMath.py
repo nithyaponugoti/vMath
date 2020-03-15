@@ -3,6 +3,7 @@
 import random
 import datetime
 import argparse
+import threading
 
 ADD = 0 
 SUB = 1
@@ -10,10 +11,44 @@ MUL = 2
 DIV = 3
 RANDOM = 4
 
-def test(q_type, num_q, q_level):
-    score = 0
-    time_start = datetime.datetime.now()
+class test_report():
+    def __init__(self, timeout_period, num_q):
+        self.start_time = datetime.datetime.now()
+        self.timeout_duration = timeout_period
+        self.num_q = num_q
+        self.score = 0
+
+    def increse_score(self):
+        self.score = self.score + 1
+
+    def time_taken(self):
+        now = datetime.datetime.now()
+        return now - self.start_time
+
+    def get_score(self):
+        return self.score
+
+    def print_report(self):
+        time_taken = int(self.time_taken().total_seconds())
+        minutes = int(time_taken / 60)
+        seconds = int(time_taken % 60)
+
+        print("\n\n=================================")
+        print("Minutes: {0} Seconds: {1}".format(minutes, seconds))
+        print("=================================")
+        print("\nScore:\nCorrect: {0} Wrong: {1}".format(
+            self.get_score(), self.num_q-self.get_score()))
+        print("=================================")
+
+def test(q_type, num_q, q_level, timeout_period):
     oper = q_type
+    report = test_report(timeout_period, num_q)
+
+    if timeout_period:
+        timer = threading.Timer(timeout_period,
+                report.print_report) 
+        timer.start()
+
 
     rand_oper_start = ADD 
     rand_oper_end = DIV 
@@ -121,21 +156,17 @@ def test(q_type, num_q, q_level):
 
         if answer == n:
             print("Great..Answer is correct!!!")
-            score += 1
+            report.increse_score()
         else:
             print("Sorry...Answer is Wrong. Correct answer is {0}".format(answer))
 
-    time_end = datetime.datetime.now()
-    time_taken = time_end - time_start
-    time_taken = int(time_taken.total_seconds())
-    minutes = int(time_taken / 60)
-    seconds = int(time_taken % 60)
-    print("\n\n=================================")
-    print("Minutes: {0} Seconds: {1}".format(minutes, seconds))
-    print("=================================")
-    print("\nScore:\nCorrect: {0} Wrong: {1}".format(score, num_q-score))
-    print("=================================")
+    report.print_report()
 
+def time_duration(x):
+    x = int(x)
+    if ((x < 1) or (x > 120)):
+        raise argparse.ArgumentTypeError('Invalid time duration for the test! Valid duration is 1 to 120 minutes.')
+    return x
 
 def main():
     arg_parser = argparse.ArgumentParser(description = 'Welcome to nMath')
@@ -146,6 +177,7 @@ def main():
     parser.add_argument("-d", help="Divisions", dest='div', action="store_true")
     parser.add_argument("-r", help="Random questions", dest='random', action="store_true")
     arg_parser.add_argument("-n", help="Number of questions", dest="num_q", required=True, type=int, choices=[5, 10, 20, 40, 50, 100, 200])
+    arg_parser.add_argument("-t", help="time duration", dest="time_duration", type=time_duration)
     arg_parser.add_argument("-l", help="Level of difficulty", dest="level", required=True, choices=['basic', 'medium', 'high'])
 
     args = arg_parser.parse_args()
@@ -153,15 +185,15 @@ def main():
     print args
 
     if args.add:
-        test(ADD, args.num_q, args.level)
+        test(ADD, args.num_q, args.level, args.time_duration)
     elif args.sub:
-        test(SUB, args.num_q, args.level)
+        test(SUB, args.num_q, args.level, args.time_duration)
     elif args.mul:
-        test(MUL, args.num_q, args.level)
+        test(MUL, args.num_q, args.level, args.time_duration)
     elif args.div:
-        test(DIV, args.num_q, args.level)
+        test(DIV, args.num_q, args.level, args.time_duration)
     elif args.random:
-        test(RANDOM, args.num_q, args.level)
+        test(RANDOM, args.num_q, args.level, args.time_duration)
 
 if __name__ == '__main__':
     main()
