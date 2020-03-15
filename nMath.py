@@ -37,6 +37,15 @@ class test_report():
         minutes = int(time_taken / 60)
         seconds = int(time_taken % 60)
 
+        if self.timeout_duration:
+            if time_taken > self.timeout_duration:
+                print("\n\n==============================================")
+                time_exceeded = time_taken - self.timeout_duration
+                time_exceeded_minutes = int(time_exceeded / 60)
+                time_exceeded_seconds = int(time_exceeded % 60)
+                print('Time exceeded by minutes {} seconds: {}'.format(
+                    time_exceeded_minutes, time_exceeded_seconds))
+
         print("\n\n==============================================")
         print('Test Finished! time: {}'.format(
             datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
@@ -100,9 +109,10 @@ def test(q_type, num_q, q_level, timeout_period):
     signal.signal(signal.SIGINT, test_stop)
 
     oper = q_type
+    if timeout_period:
+        timeout_period = timeout_period * 60
 
     # Convert minutes to seconds
-    timeout_period = timeout_period * 60
     report = test_report(timeout_period, num_q)
 
     if timeout_period:
@@ -219,12 +229,14 @@ def test(q_type, num_q, q_level, timeout_period):
                     break
                 except TestExit as test_exit:
                     report.print_report()
-                    timer.cancel()
+                    if timeout_period:
+                        timer.cancel()
                     sys.exit(1)
                 except TimerTimedOut as timeout:
                     print 'TIMEOUT!'
                     report.print_report()
-                    timer.cancel()
+                    if timeout_period:
+                        timer.cancel()
                     sys.exit(1)
                 except ValueError as verr:
                     print("Inavalid number! Enter correct number!")
@@ -239,10 +251,12 @@ def test(q_type, num_q, q_level, timeout_period):
     except KeyboardInterrupt:
         # Ctrl-C handling and send kill to threads
         print 'Test is killed!'
-        timer.cancel()
+        if timeout_period:
+            timer.cancel()
 
     report.print_report()
-    timer.cancel()
+    if timeout_period:
+        timer.cancel()
     sys.exit(0)
 
 def time_duration(x):
